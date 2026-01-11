@@ -3,6 +3,7 @@
 
 <head>
     <title>DevOps Pong</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <style>
         body {
             margin: 0;
@@ -14,24 +15,29 @@
             color: white;
             font-family: 'Courier New', monospace;
             flex-direction: column;
+            overflow: hidden;
         }
 
         canvas {
             background: #000;
             border: 4px solid #fff;
             box-shadow: 0 0 20px rgba(0, 255, 0, 0.2);
+            max-width: 100%;
+            max-height: 80vh;
         }
 
         h1 {
             margin-bottom: 10px;
             text-transform: uppercase;
             letter-spacing: 4px;
+            font-size: 5vw;
         }
 
         #status {
             margin-top: 10px;
             height: 20px;
             color: #0f0;
+            font-size: 3vw;
         }
     </style>
 </head>
@@ -40,6 +46,7 @@
     <h1>DevOps Pong</h1>
     <canvas id="game" width="800" height="600"></canvas>
     <div id="status"></div>
+    <div style="margin-top: 10px; color: #888; font-size: 12px;">Controls: Arrow Keys or Touch Left Side</div>
 
     <script>
         const canvas = document.getElementById('game');
@@ -184,6 +191,31 @@
         document.addEventListener('keyup', (e) => {
             if (e.which === 38 || e.which === 40) leftPaddle.dy = 0;
         });
+
+        // Touch Controls
+        canvas.addEventListener('touchstart', handleTouch, false);
+        canvas.addEventListener('touchmove', handleTouch, false);
+        canvas.addEventListener('touchend', (e) => { leftPaddle.dy = 0; }, false);
+
+        function handleTouch(e) {
+            e.preventDefault();
+            const touchH = e.touches[0].clientY;
+            const rect = canvas.getBoundingClientRect();
+
+            // Calculate scale in case canvas is resized via CSS
+            const scaleY = canvas.height / rect.height;
+            const touchYCanvas = (touchH - rect.top) * scaleY;
+
+            // Simple logic: touch top half = up, bottom half = down
+            // Better logic: paddle follows finger
+            if (touchYCanvas < leftPaddle.y + leftPaddle.height / 2) {
+                leftPaddle.dy = -paddleSpeed;
+            } else if (touchYCanvas > leftPaddle.y + leftPaddle.height / 2) {
+                leftPaddle.dy = paddleSpeed;
+            } else {
+                leftPaddle.dy = 0;
+            }
+        }
 
         requestAnimationFrame(loop);
     </script>
