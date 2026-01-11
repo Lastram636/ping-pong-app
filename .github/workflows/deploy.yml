@@ -61,7 +61,7 @@ jobs:
           export DB_HOST='${{ secrets.DB_HOST }}' && \
           export DB_USER='admin' && \
           export DB_PASSWORD='${{ secrets.DB_PASSWORD }}' && \
-          nohup python3 app.py > app.log 2>&1 &"
+          nohup python3 app.py > app.log 2>&1 < /dev/null &"
 
           # Wait a moment for startup and print logs for debugging
           echo "Waiting for app to start..."
