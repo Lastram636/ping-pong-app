@@ -1,14 +1,41 @@
 <!DOCTYPE html>
 <html>
+
 <head>
     <title>DevOps Pong</title>
     <style>
-        body { margin: 0; background: #222; display: flex; align-items: center; justify-content: center; height: 100vh; color: white; font-family: 'Courier New', monospace; flex-direction: column; }
-        canvas { background: #000; border: 4px solid #fff; box-shadow: 0 0 20px rgba(0,255,0,0.2); }
-        h1 { margin-bottom: 10px; text-transform: uppercase; letter-spacing: 4px; }
-        #status { margin-top: 10px; height: 20px; color: #0f0; }
+        body {
+            margin: 0;
+            background: #222;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            color: white;
+            font-family: 'Courier New', monospace;
+            flex-direction: column;
+        }
+
+        canvas {
+            background: #000;
+            border: 4px solid #fff;
+            box-shadow: 0 0 20px rgba(0, 255, 0, 0.2);
+        }
+
+        h1 {
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 4px;
+        }
+
+        #status {
+            margin-top: 10px;
+            height: 20px;
+            color: #0f0;
+        }
     </style>
 </head>
+
 <body>
     <h1>DevOps Pong</h1>
     <canvas id="game" width="800" height="600"></canvas>
@@ -64,7 +91,7 @@
 
         function loop() {
             requestAnimationFrame(loop);
-            context.clearRect(0,0,canvas.width,canvas.height);
+            context.clearRect(0, 0, canvas.width, canvas.height);
 
             if (ball.resetting) return;
 
@@ -80,8 +107,8 @@
             else if (rightPaddle.y > maxPaddleY) rightPaddle.y = maxPaddleY;
 
             // AI Movement
-            if (ball.dy > 0 && rightPaddle.y + rightPaddle.height/2 < ball.y) rightPaddle.dy = paddleSpeed;
-            else if (ball.dy < 0 && rightPaddle.y + rightPaddle.height/2 > ball.y) rightPaddle.dy = -paddleSpeed;
+            if (ball.dy > 0 && rightPaddle.y + rightPaddle.height / 2 < ball.y) rightPaddle.dy = paddleSpeed;
+            else if (ball.dy < 0 && rightPaddle.y + rightPaddle.height / 2 > ball.y) rightPaddle.dy = -paddleSpeed;
             else rightPaddle.dy = 0;
 
             // Move ball
@@ -89,8 +116,14 @@
             ball.y += ball.dy;
 
             // Wall collision (Ball Y)
-            if (ball.y < grid) { ball.y = grid; ball.dy *= -1; }
-            else if (ball.y + grid > canvas.height - grid) { ball.y = canvas.height - grid; ball.dy *= -1; }
+            if (ball.y < grid) {
+                ball.y = grid;
+                ball.dy *= -1;
+            }
+            else if (ball.y + ball.height > canvas.height - grid) {
+                ball.y = canvas.height - grid - ball.height;
+                ball.dy *= -1;
+            }
 
             // Paddle Collision
             if (collides(ball, leftPaddle)) {
@@ -123,13 +156,13 @@
             context.fillRect(rightPaddle.x, rightPaddle.y, rightPaddle.width, rightPaddle.height);
             context.fillRect(ball.x, ball.y, ball.width, ball.height);
 
-            context.fillStyle = '#666'; 
+            context.fillStyle = '#666';
             context.font = '50px Courier New';
             context.fillText(playerScore, canvas.width / 4, 80);
             context.fillText(aiScore, 3 * canvas.width / 4, 80);
-            
+
             // Net
-            context.fillStyle = 'white'; 
+            context.fillStyle = 'white';
             for (let i = grid; i < canvas.height - grid; i += grid * 2) {
                 context.fillRect(canvas.width / 2 - grid / 2, i, grid, grid);
             }
@@ -137,9 +170,9 @@
 
         function collides(obj1, obj2) {
             return obj1.x < obj2.x + obj2.width &&
-                   obj1.x + obj1.width > obj2.x &&
-                   obj1.y < obj2.y + obj2.height &&
-                   obj1.y + obj1.height > obj2.y;
+                obj1.x + obj1.width > obj2.x &&
+                obj1.y < obj2.y + obj2.height &&
+                obj1.y + obj1.height > obj2.y;
         }
 
         // Controls
@@ -155,4 +188,5 @@
         requestAnimationFrame(loop);
     </script>
 </body>
+
 </html>
