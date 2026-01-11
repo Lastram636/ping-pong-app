@@ -1,0 +1,39 @@
+name: Security Scans
+
+on:
+  push:
+    branches:
+      - develop
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  sast-bandit:
+    name: SAST (Bandit)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+      - name: Install Bandit
+        run: pip install bandit
+      - name: Run Bandit Scan
+        # Scans the current directory, skips .github, and reports only medium/high severity
+        run: bandit -r . -x .github -ll
+
+  sca-pip-audit:
+    name: SCA (pip-audit)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+      - name: Install pip-audit
+        run: pip install pip-audit
+      - name: Run Vulnerability Scan
+        run: pip-audit -r requirements.txt
