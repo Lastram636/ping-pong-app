@@ -1,7 +1,7 @@
 import os
 import datetime
 import mysql.connector
-from flask import Flask, jsonify
+from flask import Flask, jsonify, render_template, request
 
 app = Flask(__name__)
 
@@ -28,13 +28,20 @@ def init_db():
             created_at DATETIME
         )
     """)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS scores (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            score INT,
+            created_at DATETIME
+        )
+    """)
     conn.commit()
     cursor.close()
     conn.close()
 
 @app.route('/')
 def home():
-    return "Ping Pong App Running!"
+    return render_template('index.html')
 
 @app.route('/ping')
 def ping():
@@ -49,6 +56,23 @@ def ping():
         return jsonify({"message": "pong", "timestamp": now.isoformat(), "status": "saved"})
     except Exception as e:
         return jsonify({"message": "pong", "error": str(e), "status": "failed_to_save"}), 500
+
+@app.route('/api/save_score', methods=['POST'])
+def save_score():
+    try:
+        data = request.json
+        score = data.get('score', 0)
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        now = datetime.datetime.now()
+        cursor.execute("INSERT INTO scores (score, created_at) VALUES (%s, %s)", (score, now))
+        conn.commit()
+        last_id = cursor.lastrowid
+        cursor.close()
+        conn.close()
+        return jsonify({"status": "saved", "id": last_id, "score": score})
+    except Exception as e:
+        return jsonify({"status": "error", "error": str(e)}), 500
 
 if __name__ == '__main__':
     # Try to init table on start

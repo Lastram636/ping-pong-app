@@ -50,6 +50,8 @@ jobs:
           
           # 2. Copy files to the VM
           gcloud compute scp app.py requirements.txt ping-pong-vm:~/app/ --zone=us-central1-a
+          # Copy templates directory (recursive)
+          gcloud compute scp --recurse templates ping-pong-vm:~/app/ --zone=us-central1-a
           
           # 3. Install dependencies and restart app
           # Killing existing python process to avoid port conflicts (simple kill)

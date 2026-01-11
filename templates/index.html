@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>DevOps Pong</title>
+    <style>
+        body { margin: 0; background: #222; display: flex; align-items: center; justify-content: center; height: 100vh; color: white; font-family: 'Courier New', monospace; flex-direction: column; }
+        canvas { background: #000; border: 4px solid #fff; box-shadow: 0 0 20px rgba(0,255,0,0.2); }
+        h1 { margin-bottom: 10px; text-transform: uppercase; letter-spacing: 4px; }
+        #status { margin-top: 10px; height: 20px; color: #0f0; }
+    </style>
+</head>
+<body>
+    <h1>DevOps Pong</h1>
+    <canvas id="game" width="800" height="600"></canvas>
+    <div id="status"></div>
+
+    <script>
+        const canvas = document.getElementById('game');
+        const context = canvas.getContext('2d');
+        const statusDiv = document.getElementById('status');
+        const grid = 15;
+        const paddleHeight = grid * 5; // 75
+        const maxPaddleY = canvas.height - grid - paddleHeight;
+
+        var paddleSpeed = 6;
+        var ballSpeed = 5;
+
+        const leftPaddle = { x: grid * 2, y: canvas.height / 2 - paddleHeight / 2, width: grid, height: paddleHeight, dy: 0 };
+        const rightPaddle = { x: canvas.width - grid * 3, y: canvas.height / 2 - paddleHeight / 2, width: grid, height: paddleHeight, dy: 0 };
+        const ball = { x: canvas.width / 2, y: canvas.height / 2, width: grid, height: grid, dx: ballSpeed, dy: -ballSpeed, resetting: false };
+
+        let playerScore = 0;
+        let aiScore = 0;
+
+        function resetBall() {
+            ball.resetting = true;
+            setTimeout(() => {
+                ball.x = canvas.width / 2;
+                ball.y = canvas.height / 2;
+                ball.dx = (Math.random() > 0.5 ? 1 : -1) * ballSpeed;
+                ball.dy = (Math.random() > 0.5 ? 1 : -1) * ballSpeed;
+                ball.resetting = false;
+            }, 1000);
+        }
+
+        async function saveScore(score) {
+            statusDiv.innerText = "Saving score...";
+            try {
+                const res = await fetch('/api/save_score', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ score: score })
+                });
+                const data = await res.json();
+                if (data.status === 'saved') {
+                    statusDiv.innerText = `Score ${score} saved! ID: ${data.id}`;
+                } else {
+                    statusDiv.innerText = "Error saving score: " + data.error;
+                }
+            } catch (e) {
+                statusDiv.innerText = "Network error saving score.";
+            }
+        }
+
+        function loop() {
+            requestAnimationFrame(loop);
+            context.clearRect(0,0,canvas.width,canvas.height);
+
+            if (ball.resetting) return;
+
+            // Move paddles
+            leftPaddle.y += leftPaddle.dy;
+            rightPaddle.y += rightPaddle.dy;
+
+            // Wall collision (Paddles)
+            if (leftPaddle.y < grid) leftPaddle.y = grid;
+            else if (leftPaddle.y > maxPaddleY) leftPaddle.y = maxPaddleY;
+
+            if (rightPaddle.y < grid) rightPaddle.y = grid;
+            else if (rightPaddle.y > maxPaddleY) rightPaddle.y = maxPaddleY;
+
+            // AI Movement
+            if (ball.dy > 0 && rightPaddle.y + rightPaddle.height/2 < ball.y) rightPaddle.dy = paddleSpeed;
+            else if (ball.dy < 0 && rightPaddle.y + rightPaddle.height/2 > ball.y) rightPaddle.dy = -paddleSpeed;
+            else rightPaddle.dy = 0;
+
+            // Move ball
+            ball.x += ball.dx;
+            ball.y += ball.dy;
+
+            // Wall collision (Ball Y)
+            if (ball.y < grid) { ball.y = grid; ball.dy *= -1; }
+            else if (ball.y + grid > canvas.height - grid) { ball.y = canvas.height - grid; ball.dy *= -1; }
+
+            // Paddle Collision
+            if (collides(ball, leftPaddle)) {
+                ball.dx *= -1;
+                ball.x = leftPaddle.x + leftPaddle.width;
+                ballSpeed += 0.2; // Speed up
+            }
+            else if (collides(ball, rightPaddle)) {
+                ball.dx *= -1;
+                ball.x = rightPaddle.x - ball.width;
+            }
+
+            // Scoring
+            if (ball.x < 0) {
+                // AI Scored
+                aiScore++;
+                playerScore = 0; // Reset streak
+                resetBall();
+            }
+            else if (ball.x > canvas.width) {
+                // Player Scored
+                playerScore++;
+                saveScore(playerScore); // Save current streak
+                resetBall();
+            }
+
+            // Draw
+            context.fillStyle = 'white';
+            context.fillRect(leftPaddle.x, leftPaddle.y, leftPaddle.width, leftPaddle.height);
+            context.fillRect(rightPaddle.x, rightPaddle.y, rightPaddle.width, rightPaddle.height);
+            context.fillRect(ball.x, ball.y, ball.width, ball.height);
+
+            context.fillStyle = '#666'; 
+            context.font = '50px Courier New';
+            context.fillText(playerScore, canvas.width / 4, 80);
+            context.fillText(aiScore, 3 * canvas.width / 4, 80);
+            
+            // Net
+            context.fillStyle = 'white'; 
+            for (let i = grid; i < canvas.height - grid; i += grid * 2) {
+                context.fillRect(canvas.width / 2 - grid / 2, i, grid, grid);
+            }
+        }
+
+        function collides(obj1, obj2) {
+            return obj1.x < obj2.x + obj2.width &&
+                   obj1.x + obj1.width > obj2.x &&
+                   obj1.y < obj2.y + obj2.height &&
+                   obj1.y + obj1.height > obj2.y;
+        }
+
+        // Controls
+        document.addEventListener('keydown', (e) => {
+            if (e.which === 38) leftPaddle.dy = -paddleSpeed;
+            else if (e.which === 40) leftPaddle.dy = paddleSpeed;
+        });
+
+        document.addEventListener('keyup', (e) => {
+            if (e.which === 38 || e.which === 40) leftPaddle.dy = 0;
+        });
+
+        requestAnimationFrame(loop);
+    </script>
+</body>
+</html>
