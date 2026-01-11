@@ -43,10 +43,17 @@ jobs:
       # For simplicity in this demo, we assume the VM has git or we just SCP the file.
       - name: Deploy to Compute Instance
         env:
-            HOST_IP: ${{ secrets.VM_IP }} # Assume we get this from Terraform or manual config
+            HOST_IP: ${{ secrets.VM_IP }}
         run: |
-          echo "Simulating deployment to $HOST_IP"
-          # Detailed real command would look like:
-          # gcloud compute scp app.py requirements.txt user@ping-pong-vm:~/app/ --zone=us-central1-a
-          # gcloud compute ssh user@ping-pong-vm --zone=us-central1-a --command "pip3 install -r ~/app/requirements.txt && nohup python3 ~/app/app.py &"
-          echo "Deployment command sent."
+          # 1. Create directory if it doesn't exist
+          gcloud compute ssh ping-pong-vm --zone=us-central1-a --command "mkdir -p ~/app"
+          
+          # 2. Copy files to the VM
+          gcloud compute scp app.py requirements.txt ping-pong-vm:~/app/ --zone=us-central1-a
+          
+          # 3. Install dependencies and restart app
+          # Killing existing python process to avoid port conflicts (simple kill)
+          gcloud compute ssh ping-pong-vm --zone=us-central1-a --command "sudo pkill python3 || true"
+          
+          # Install and Run
+          gcloud compute ssh ping-pong-vm --zone=us-central1-a --command "cd ~/app && pip3 install -r requirements.txt && nohup python3 app.py > app.log 2>&1 &"
