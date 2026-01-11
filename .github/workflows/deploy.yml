@@ -63,7 +63,8 @@ jobs:
           echo 'Checking DB_HOST...' && \
           if [ -z '${{ secrets.DB_HOST || vars.DB_HOST }}' ]; then echo 'ERROR: DB_HOST (Secret/Var) is empty!'; else echo 'DB_HOST is set'; fi && \
           export DB_HOST='${{ secrets.DB_HOST || vars.DB_HOST }}' && \
+          if [ -z '${{ secrets.DB_PASSWORD || vars.DB_PASSWORD }}' ]; then echo 'ERROR: DB_PASSWORD (Secret/Var) is empty!'; else echo 'DB_PASSWORD length is ${#{{ secrets.DB_PASSWORD || vars.DB_PASSWORD }}}'; fi && \
           export DB_USER='admin' && \
-          export DB_PASSWORD='${{ secrets.DB_PASSWORD }}' && \
-          nohup python3 app.py > app.log 2>&1 < /dev/null & \
+          export DB_PASSWORD='${{ secrets.DB_PASSWORD || vars.DB_PASSWORD }}' && \
+          nohup python3 app.py > app.log 2>&1 < /dev/null & disown && \
           sleep 2 && exit"
