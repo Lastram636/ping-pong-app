@@ -68,5 +68,30 @@ jobs:
           if [ -z '${{ secrets.DB_PASSWORD || vars.DB_PASSWORD }}' ]; then echo 'ERROR: DB_PASSWORD (Secret/Var) is empty!'; else echo 'DB_PASSWORD is set'; fi && \
           export DB_USER='admin' && \
           export DB_PASSWORD='${{ secrets.DB_PASSWORD || vars.DB_PASSWORD }}' && \
-          nohup python3 app.py > app.log 2>&1 < /dev/null & disown && \
-          sleep 2 && exit"
+          # Construct Systemd Service File
+          # We use sudo to write to /etc/systemd/system
+          echo "[Unit]
+          Description=Ping Pong Flask App
+          After=network.target
+          
+          [Service]
+          User=$(whoami)
+          WorkingDirectory=$(pwd)
+          Environment=\"DB_HOST=${{ secrets.DB_HOST || vars.DB_HOST }}\"
+          Environment=\"DB_USER=admin\"
+          Environment=\"DB_PASSWORD=${{ secrets.DB_PASSWORD || vars.DB_PASSWORD }}\"
+          ExecStart=/usr/bin/python3 $(pwd)/app.py
+          Restart=always
+          
+          [Install]
+          WantedBy=multi-user.target" | sudo tee /etc/systemd/system/pingpong.service
+          
+          # Enable and Start
+          sudo systemctl daemon-reload
+          sudo systemctl enable pingpong.service
+          sudo systemctl restart pingpong.service
+          
+          # Verify status (don't fail immediately if it needs a moment, but print it)
+          sleep 2
+          sudo systemctl status pingpong.service --no-pager || true
+          exit"
